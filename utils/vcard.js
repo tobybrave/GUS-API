@@ -44,7 +44,7 @@ const saveVCF = (fName) => {
 			date: compiledAt,
 			vcf: content
 		})
-		vcard.save().then(result => logger.info(result)).catch(logger.error)
+		vcard.save().then(() => logger.info("saved vcard to db")).catch(logger.error)
 		
 		fs.unlinkSync(`./${fName}`)
 	})

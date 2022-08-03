@@ -18,13 +18,13 @@ const data = require("./models/seed.json");
 const Contact = require("./models/contact");
 const Vcard = require("./models/vcard");
 const vcardUtils = require("./utils/vcard")
-const app = express();
 
+const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const compilationDate = (moment) => {
+const formattedDate = (moment) => {
     const pad = (n) => n >=10 ? n : "0"+n 
     
     const date = moment || new Date()
@@ -38,20 +38,17 @@ const compilationDate = (moment) => {
 cron.schedule("*/10 * * * *", async () => {
 	logger.info("running cron job")
 
-    const compiledDate = compilationDate()
-    
-    logger.info("compiledDate", compiledDate)
+    const compiledDate = formattedDate()
     const filename = `${compiledDate}.vcf`;
     
 	const dbContacts = await Contact.find({})
-	logger.info("db contacts", dbContacts)
 	
 	await vcardUtils.createVCF(filename, dbContacts)
 	await vcardUtils.saveVCF(filename)
 })
 
 app.get("/ping", (request, response) => {
-  Vcard.find({}).then(logger.info).catch(logger.error)
+  // Vcard.find({}).then(logger.info).catch(logger.error)
   Contact.find({})
     .then((result) => response.json(result))
     .catch((err) => response.status(500).json(err));
@@ -143,23 +140,45 @@ app.post("/api/auth/verify", (request, response) => {
     .catch(logger.error);
 });
 
-// get all vcard
-app.get("/api/downloads", async (request, response) => {
+// get all vcards
+// TODO: pagination, sort and order by date in desc order
+app.get("/api/vcards", async (request, response) => {
   const vcards = await Vcard.find({});
   if (vcards.length){
-	  const v = vcards.map(({_id, date, vcf})=> ({date: date.toDateString(), id: _id.toString(), vcard: vcf.toString()}))
-	  const filename = `GUS ${v[0].date}`
-	  response.set('Content-Type', `text/vcard; name="${filename}.vcf"`);
-    response.set('Content-Disposition', `inline; filename="${filename}.vcf"`);
-	  return response.status(200).send(v[0].vcard)
-
+      
+      return response.status(200).json({
+          vcards,
+          message: "vcards retrieved"
+      })
   }
 
-
-  response.status(200).json(vcards);
+  response.status(200).json({
+      message: "no vcards yet"
+  });
 });
 
-// protect route
+// get single vcard 
+// TODO: verify password, change method to correspond
+app.post("/api/vcards/:vcardId", async (request, response) => {
+    const { vcardId } = request.params
+    const { password } = request.body
+    
+    const vcard = await Vcard.findById(vcardId)
+    if (!vcard) {
+        return response.status(404).json({
+            error: "vcard not found"
+        })
+    }
+    
+    const filename = `GUS ${formattedDate(vcard.date)}`
+    
+    response.set("Content-Type", `text/vcard; name="${filename}.vcf"`)
+    response.set("Content-Disposition", `inline; filename="${filename}.vcf"`)
+    
+    response.status(200).send(vcard.vcf.toString())
+})
+
+// TODO: protect route
 app.delete("/api/contacts/:phone", async (request, response) => {
     const { phone } = request.params
 
@@ -186,9 +205,9 @@ app.delete("/api/contacts/:phone", async (request, response) => {
     
     // recompile contact
     const contactsCompiledOnDate = await Contact.find({joined: dayRange})
-    logger.info("contacts compiled on affected date", compilationDate(compiledDate))
+    logger.info("contacts compiled on affected date", formattedDate(compiledDate))
     logger.info("==== RECOMPILING VCARD ====")
-    const filename = `${compilationDate(compiledDate)}.vcf`
+    const filename = `${formattedDate(compiledDate)}.vcf`
     
     await vcardUtils.createVCF(filename, contactsCompiledOnDate)
     await vcardUtils.saveVCF(filename)
