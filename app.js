@@ -35,7 +35,7 @@ const formattedDate = (moment) => {
     return `${year}-${pad(month + 1)}-${pad(day)}`
 }
 
-cron.schedule("*/10 * * * *", async () => {
+cron.schedule("*/2 * * * *", async () => {
 	logger.info("running cron job")
 
     const compiledDate = formattedDate()
@@ -61,8 +61,8 @@ app.get("/seed", (request, response) => {
     .catch((err) => response.status(500).json(err));
 });
 app.get("/unseed", (request, response) => {
-  Contact.deleteMany({}).then(()=> logger.info("contacts db cleared"))
-  Vcard.deleteMany({})
+  Vcard .deleteMany({}).then(()=> logger.info("contacts db cleared"))
+  Contact.deleteMany({})
     .then(() => response.status(200).json({ message: "db cleared" }))
     .catch((err) => response.status(500).json(err));
 });
@@ -141,20 +141,21 @@ app.post("/api/auth/verify", (request, response) => {
 });
 
 // get all vcards
-// TODO: pagination, sort and order by date in desc order
 app.get("/api/vcards", async (request, response) => {
-  const vcards = await Vcard.find({});
-  if (vcards.length){
-      
+  const page = Number(request.query.page) || 1
+  const limiter = 10
+  const offset = (page - 1) * limiter
+
+  const vcards = await Vcard.find().sort({ date: "desc" }).limit(limiter).skip(offset);
+  const count = await Vcard.count()
+  
       return response.status(200).json({
           vcards,
+          totalPages: Math.ceil(count/limiter),
+          currentPage: page,
           message: "vcards retrieved"
       })
-  }
 
-  response.status(200).json({
-      message: "no vcards yet"
-  });
 });
 
 // get single vcard 
