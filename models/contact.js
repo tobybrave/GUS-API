@@ -9,8 +9,13 @@ const contactSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  password: String,
-  verified: Boolean,
+  password: {
+    type: String,
+    required: true,
+  },
+  token: {
+    type: String,
+  },
   package: {
     type: String,
     enum: ["free", "package"],

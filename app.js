@@ -10,6 +10,9 @@ const express = require("express");
 const cors = require("cors");
 const { nanoid } = require("nanoid");
 const cron = require("node-cron")
+const jwt = require("jsonwebtoken")
+const bcrypt = require("bcryptjs")
+
 const redisClient = require("./utils/redisClient");
 //const twilioClient = require("./utils/twilioClient");
 const genVerifyCode = require("./utils/genVerifyCode");
@@ -35,7 +38,7 @@ const formattedDate = (moment) => {
     return `${year}-${pad(month + 1)}-${pad(day)}`
 }
 
-cron.schedule("*/2 * * * *", async () => {
+cron.schedule("*/20 * * * *", async () => {
 	logger.info("running cron job")
 
     const compiledDate = formattedDate()
@@ -55,7 +58,7 @@ app.get("/ping", (request, response) => {
   // response.status(200).json({ data: "pong" });
 });
 
-app.get("/seed", (request, response) => {
+app.post("/seed", (request, response) => {
   Contact.insertMany(data.verified)
     .then((result) => response.status(202).json(result))
     .catch((err) => response.status(500).json(err));
@@ -80,15 +83,11 @@ app.post("/api/auth", (request, response) => {
   const user = {
     name,
     phone,
-    // // move to verify
-    // package: "free",
-    // joined: new Date(),
-    // isVerified: false,
   };
   // logger.info(user);
   const verificationCode = genVerifyCode();
-  logger.info(verificationCode);
-
+  logger.info("generated code", verificationCode);
+  // remove callback
   redisClient
     .set(user.phone, `${verificationCode}`, "EX", 3600)
     .then((res) => logger.info(res))
@@ -113,26 +112,48 @@ app.post("/api/auth", (request, response) => {
 app.post("/api/auth/verify", (request, response) => {
   const { name, phone, verificationCode } = request.body;
   // TODO: verify if code sent to whatsapp is the same and issue a token, a pass, and add to db
-
   redisClient
     .get(phone)
-    .then((result) => {
-      if (result === verificationCode) {
+    .then(async (result) => {
+      if (Number(result) === Number(verificationCode)) {
+	// remove logger
         redisClient.del(phone).then(logger.info).catch(logger.error);
 
         const password = nanoid();
-        logger.info("passsword generated is:", password);
-        const contact = new Contact({
-          name,
-          phone,
-          password,
-        });
+        const saltRound = 10
+        const hashPassword = await bcrypt.hash(password, saltRound)
+        
+        const payload = {
+            name,
+            phone
+        }
+        return jwt.sign(payload, process.env.JWT_SECRET_KEY, {issuer: "growursocials.com"}, (err, token) => {
+            if (err) {
+                throw new Error(err)
+                return response.status(500).json({
+                    error: err
+                })
+            }
 
-        contact
-          .save()
-          .then((resp) => response.status(201).json({ resp, message: "Account created" }))
-          .catch((err) => response.status(500).json({ error: err.message }));
+            const contact = new Contact({
+                name,
+                phone,
+                token,
+                password: hashPassword
+            });
+            
+            contact.save()
+                .then((resp) => {
+		    const user = { ...resp.toJSON(), password }
+                    return response.status(201).json({
+		    user,
+                    message: "Account created"
+          })
+                })
+                .catch((err) => response.status(500).json({ error: err.message }));
+        })
       }
+      
       return response.status(400).json({
         error: "The phone number and sms code does not match",
       });
@@ -148,12 +169,11 @@ app.get("/api/vcards", async (request, response) => {
 
   const vcards = await Vcard.find().sort({ date: "desc" }).limit(limiter).skip(offset);
   const count = await Vcard.count()
-  
-      return response.status(200).json({
-          vcards,
-          totalPages: Math.ceil(count/limiter),
-          currentPage: page,
-          message: "vcards retrieved"
+  return response.status(200).json({
+      vcards,
+      totalPages: Math.ceil(count/limiter),
+      currentPage: page,
+      message: "vcards retrieved"
       })
 
 });
