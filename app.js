@@ -44,10 +44,12 @@ cron.schedule("*/20 * * * *", async () => {
     const compiledDate = formattedDate()
     const filename = `${compiledDate}.vcf`;
     
-	const dbContacts = await Contact.find({})
+	const dbContacts = await Contact.find()
 	
-	await vcardUtils.createVCF(filename, dbContacts)
-	await vcardUtils.saveVCF(filename)
+	if (dbContacts.length) {
+	    await vcardUtils.createVCF(filename, dbContacts)
+	    await vcardUtils.saveVCF(filename)
+	}
 })
 
 app.get("/ping", (request, response) => {
@@ -226,12 +228,14 @@ app.delete("/api/contacts/:phone", async (request, response) => {
     
     // recompile contact
     const contactsCompiledOnDate = await Contact.find({joined: dayRange})
-    logger.info("contacts compiled on affected date", formattedDate(compiledDate))
-    logger.info("==== RECOMPILING VCARD ====")
-    const filename = `${formattedDate(compiledDate)}.vcf`
     
-    await vcardUtils.createVCF(filename, contactsCompiledOnDate)
-    await vcardUtils.saveVCF(filename)
+    logger.info("contacts compiled on affected date", formattedDate(compiledDate))
+    if (contactsCompiledOnDate.length) {
+        logger.info("==== RECOMPILING VCARD ====")
+        const filename = `${formattedDate(compiledDate)}.vcf`
+        await vcardUtils.createVCF(filename, contactsCompiledOnDate)
+        await vcardUtils.saveVCF(filename)
+    }
     
     response.status(204).json({
         message: "contact removed"
