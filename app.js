@@ -6,6 +6,7 @@
 //     === WANTS ===
 //     joi for verification
 
+require("express-async-errors")
 const express = require("express");
 const cors = require("cors");
 const { nanoid } = require("nanoid");
@@ -182,9 +183,17 @@ app.get("/api/vcards", async (request, response) => {
 
 // get single vcard 
 // TODO: verify password, change method to correspond
-app.post("/api/vcards/:vcardId", async (request, response) => {
+app.post("/api/vcards/:vcardId", validateToken, async (request, response) => {
     const { vcardId } = request.params
     const { password } = request.body
+    
+    const contact = await Contact.findOne({ phone: request.user.phone})
+    const validPassword = await bcrypt.compare(password, contact.password)
+    if (!validPassword) {
+        return response.status(400).json({
+            error: "invalid user details"
+        })
+    }
     
     const vcard = await Vcard.findById(vcardId)
     if (!vcard) {
@@ -256,9 +265,41 @@ const errorHandler = (error, request, response, next) => {
       error: error.message,
     });
   }
+  if (error.name === "CastError") {
+    return response.status(400).json({
+      error: "malformed id"
+    });
+  }
+  if (error.name === "MongooseError") {
+    return response.status(400).json({
+      error: error.message,
+    });
+  }
+  if (error.name === "JsonWebTokenError") {
+    return response.status(401).json({
+      error: error.message,
+    });
+  }
   return next(error);
 };
 app.use(errorHandler);
+
+function validateToken(req, res, next) {
+    const auth = req.get("Authorization")
+    const authType = auth?.startsWith("Bearer ")
+    if (!auth || !authType) {
+        return res.status(401).json({
+            error: "missing or invalid token"
+        })
+    }
+    
+    const token = auth.split(" ")[1]
+    jwt.verify(token, process.env.JWT_SECRET_KEY, (err, decodedToken) => {
+        if (err) next(err)
+        req.user = decodedToken
+    })
+    next()
+}
 
 app.disable("x-powered-by");
 module.exports = app;
