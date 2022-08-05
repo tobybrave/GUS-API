@@ -1,8 +1,6 @@
 // TODOS
 //     === NEEDS ===
-//     uuid for password generation
 //     whatsapp api for verification process
-//      session during the verification process ?
 //     === WANTS ===
 //     joi for verification
 
@@ -212,6 +210,21 @@ app.post("/api/vcards/:vcardId", validateToken, async (request, response) => {
     
     response.set("Content-Type", `text/vcard; name="${filename}.vcf"`)
     response.set("Content-Disposition", `inline; filename="${filename}.vcf"`)
+    
+    response.status(200).send(vcard.vcf.toString())
+})
+
+// for testing
+app.get("/api/vcards/:id", async(request, response) => {
+    const vcard = await Vcard.findById(id)
+    if (!vcard) {
+        return response.status(404).json({
+            error: "vcard not found"
+        })
+    }
+    
+    response.set("Content-Type", `text/vcard; name=${new Date().toDateString()}.vcf`)
+    response.set("Content-Disposition", `inline; filename=${new Date().toDateString()}.vcf`)
     
     response.status(200).send(vcard.vcf.toString())
 })
