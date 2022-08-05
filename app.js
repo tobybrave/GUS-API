@@ -77,10 +77,10 @@ app.get("/ping", (request, response) => {
   // response.status(200).json({ data: "pong" });
 });
 
-app.post("/seed", (request, response) => {
-  Contact.insertMany(data.verified)
-    .then((result) => response.status(202).json(result))
-    .catch((err) => response.status(500).json(err));
+app.post("/seed", async (request, response) => {
+  const contacts = await Contact.insertMany(data.verified);
+
+  response.status(200).json(contacts);
 });
 app.get("/unseed", (request, response) => {
   Vcard.deleteMany({}).then(() => logger.info("contacts db cleared"));
@@ -229,7 +229,7 @@ app.post("/api/vcards/:vcardId", validateToken, async (request, response) => {
       error: "vcard not found",
     });
   }
-  logger.info(contact);
+
   if (contact.vcards.indexOf(vcardId) === -1) {
     contact.vcards = contact.vcards.concat(vcardId);
     contact.downloads = vcard.totalContacts?.length || 20;
@@ -324,7 +324,7 @@ app.use(invalidEndpoint);
 
 const errorHandler = (error, request, response, next) => {
   logger.error(error);
-  if (error.name === "ValidationError") {
+  if (error.name === "ValidatorError") {
     return response.status(400).json({
       error: error.message,
     });
