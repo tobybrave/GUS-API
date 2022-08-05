@@ -211,9 +211,14 @@ app.post("/api/vcards/:vcardId", validateToken, async (request, response) => {
 })
 
 // TODO: protect route
-app.delete("/api/contacts/:phone", async (request, response) => {
+app.delete("/api/contacts/:phone", validateToken ,async (request, response) => {
     const { phone } = request.params
-
+    
+    const adminContact = await Contact.findOne({phone: request.user.phone})
+    if (adminContact.phone !== process.env.ADMIN_PHONE) {
+        return response.status(403).end()
+    }
+    
     const contact = await Contact.findOneAndRemove({phone})
     if (!contact) {
         return response.status(404).json({
