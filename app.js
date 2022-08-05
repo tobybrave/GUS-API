@@ -49,7 +49,7 @@ cron.schedule("*/20 * * * *", async () => {
 	
 	if (dbContacts.length) {
 	    await vcardUtils.createVCF(filename, dbContacts)
-	    await vcardUtils.saveVCF(filename)
+	    await vcardUtils.saveVCF(filename, dbContacts.length)
 	}
 })
 
@@ -248,7 +248,7 @@ app.delete("/api/contacts/:phone", validateToken ,async (request, response) => {
         logger.info("==== RECOMPILING VCARD ====")
         const filename = `${formattedDate(compiledDate)}.vcf`
         await vcardUtils.createVCF(filename, contactsCompiledOnDate)
-        await vcardUtils.saveVCF(filename)
+        await vcardUtils.saveVCF(filename, contactsCompiledOnDate.length)
     }
     
     response.status(204).json({

@@ -30,7 +30,7 @@ const createVCF = (fName, contacts) => {
     });
 };
 
-const saveVCF = (fName) => {
+const saveVCF = (fName, total) => {
     logger.info("==== SAVING VCARD =====")
     const compiledAt = fName.split(".")[0]
     // attach admin
@@ -42,6 +42,7 @@ const saveVCF = (fName) => {
 		
 		const vcard = new Vcard({
 			date: compiledAt,
+			totalContacts: total,
 			vcf: content
 		})
 		vcard.save().then(() => logger.info("saved vcard to db")).catch(logger.error)

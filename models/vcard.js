@@ -6,6 +6,9 @@ const vcardSchema = new mongoose.Schema({
     required: true,
     default: new Date(),
   },
+  totalContacts: {
+    type: Number,
+  },
   vcf: {
     type: Buffer,
     required: true,
