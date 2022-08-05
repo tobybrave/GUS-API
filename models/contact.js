@@ -18,7 +18,7 @@ const contactSchema = new mongoose.Schema({
   },
   package: {
     type: String,
-    enum: ["free", "package"],
+    enum: ["free", "premium"],
     default: "free",
   },
   joined: {
@@ -29,10 +29,12 @@ const contactSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-  vcards: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Vcard"
-  }]
+  vcards: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Vcard",
+    },
+  ],
 });
 
 /* eslint-disable */

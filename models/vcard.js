@@ -15,14 +15,15 @@ const vcardSchema = new mongoose.Schema({
   },
 });
 
+/* eslint-disable */
 vcardSchema.set("toJSON", {
-    transform: (doc, obj) => {
-        obj.id = obj._id.toString()
-        
-        delete obj._id
-        delete obj.__v
-        delete obj.vcf
-    }
-})
+  transform: (doc, obj) => {
+    obj.id = obj._id.toString();
+
+    delete obj._id;
+    delete obj.__v;
+    delete obj.vcf;
+  },
+});
 
 module.exports = mongoose.model("Vcard", vcardSchema);

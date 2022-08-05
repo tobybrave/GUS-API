@@ -4,23 +4,23 @@
 //     === WANTS ===
 //     joi for verification
 
-require("express-async-errors")
+require("express-async-errors");
 const express = require("express");
 const cors = require("cors");
 const { nanoid } = require("nanoid");
-const cron = require("node-cron")
-const jwt = require("jsonwebtoken")
-const bcrypt = require("bcryptjs")
-const axios = require("axios")
+const cron = require("node-cron");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+const axios = require("axios");
 
 const redisClient = require("./utils/redisClient");
-//const twilioClient = require("./utils/twilioClient");
+// const twilioClient = require("./utils/twilioClient");
 const genVerifyCode = require("./utils/genVerifyCode");
 const logger = require("./utils/logger");
 const data = require("./models/seed.json");
 const Contact = require("./models/contact");
 const Vcard = require("./models/vcard");
-const vcardUtils = require("./utils/vcard")
+const vcardUtils = require("./utils/vcard");
 
 const app = express();
 app.use(cors());
@@ -28,29 +28,46 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const formattedDate = (moment) => {
-    const pad = (n) => n >=10 ? n : "0"+n 
-    
-    const date = moment || new Date()
-    const day = date.getDay()
-    const month = date.getMonth()
-    const year = date.getFullYear()
-    
-    return `${year}-${pad(month + 1)}-${pad(day)}`
+  const pad = (n) => (n >= 10 ? n : `0${n}`);
+
+  const date = moment || new Date();
+  const day = date.getDay();
+  const month = date.getMonth();
+  const year = date.getFullYear();
+
+  return `${year}-${pad(month + 1)}-${pad(day)}`;
+};
+
+function validateToken(req, res, next) {
+  const auth = req.get("Authorization");
+  const authType = auth?.startsWith("Bearer ");
+  if (!auth || !authType) {
+    return res.status(401).json({
+      error: "missing or invalid token",
+    });
+  }
+
+  const token = auth.split(" ")[1];
+  jwt.verify(token, process.env.JWT_SECRET_KEY, (err, decodedToken) => {
+    if (err) next(err);
+    req.user = decodedToken;
+  });
+  return next();
 }
 
 cron.schedule("*/20 * * * *", async () => {
-	logger.info("running cron job")
+  logger.info("running cron job");
 
-    const compiledDate = formattedDate()
-    const filename = `${compiledDate}.vcf`;
-    
-	const dbContacts = await Contact.find()
-	
-	if (dbContacts.length) {
-	    await vcardUtils.createVCF(filename, dbContacts)
-	    await vcardUtils.saveVCF(filename, dbContacts.length)
-	}
-})
+  const compiledDate = formattedDate();
+  const filename = `${compiledDate}.vcf`;
+
+  const dbContacts = await Contact.find();
+
+  if (dbContacts.length) {
+    await vcardUtils.createVCF(filename, dbContacts);
+    await vcardUtils.saveVCF(filename, dbContacts.length);
+  }
+});
 
 app.get("/ping", (request, response) => {
   // Vcard.find({}).then(logger.info).catch(logger.error)
@@ -66,7 +83,7 @@ app.post("/seed", (request, response) => {
     .catch((err) => response.status(500).json(err));
 });
 app.get("/unseed", (request, response) => {
-  Vcard .deleteMany({}).then(()=> logger.info("contacts db cleared"))
+  Vcard.deleteMany({}).then(() => logger.info("contacts db cleared"));
   Contact.deleteMany({})
     .then(() => response.status(200).json({ message: "db cleared" }))
     .catch((err) => response.status(500).json(err));
@@ -82,22 +99,22 @@ app.post("/api/auth", async (request, response) => {
       error: "all fields are required",
     });
   }
-  
-  const contactInRedis = await redisClient.get(phone)
+
+  const contactInRedis = await redisClient.get(phone);
   if (contactInRedis) {
-      return response.status(200).json({
-          message: "a verification code was sent to your whatsapp"
-      })
+    return response.status(200).json({
+      message: "a verification code was sent to your whatsapp",
+    });
   }
-  
-  const contactInDb = await Contact.findOne({phone})
+
+  const contactInDb = await Contact.findOne({ phone });
   if (contactInDb) {
-      return response.status(200).json({
-          user: contactInDb,
-          message: "contact already exist"
-      })
+    return response.status(200).json({
+      user: contactInDb,
+      message: "contact already exist",
+    });
   }
-  
+
   const user = {
     name,
     phone,
@@ -106,17 +123,16 @@ app.post("/api/auth", async (request, response) => {
   const verificationCode = genVerifyCode();
   logger.info("generated code", verificationCode);
 
-  await redisClient
-    .set(user.phone, `${verificationCode}`, "EX", 3600)
-//  twilioClient.messages
-//    .create({
-//      from: process.env.TWILIO_PHONE_NO,
-//      to: `${user.phone}`,
-//      body: `Hello ${user.name}! Your WassapViews verification code is: ${verificationCode}`,
-//    })
-//    .then((message) => logger.info(message.sid))
-//    .catch((err) => logger.error(err));
-//
+  await redisClient.set(user.phone, `${verificationCode}`, "EX", 3600);
+  //  twilioClient.messages
+  //    .create({
+  //      from: process.env.TWILIO_PHONE_NO,
+  //      to: `${user.phone}`,
+  //      body: `Hello ${user.name}! Your WassapViews verification code is: ${verificationCode}`,
+  //    })
+  //    .then((message) => logger.info(message.sid))
+  //    .catch((err) => logger.error(err));
+  //
   return response.status(202).json({
     user,
     message: "Account creation is process. Kindly check your whatsapp for your verification code",
@@ -131,44 +147,45 @@ app.post("/api/auth/verify", (request, response) => {
     .get(phone)
     .then(async (result) => {
       if (Number(result) === Number(verificationCode)) {
-	// remove logger
+        // remove logger
         redisClient.del(phone).then(logger.info).catch(logger.error);
 
         const password = nanoid();
-        const saltRound = 10
-        const hashPassword = await bcrypt.hash(password, saltRound)
-        
-        const payload = {
-            name,
-            phone
-        }
-        return jwt.sign(payload, process.env.JWT_SECRET_KEY, {issuer: "growursocials.com"}, (err, token) => {
-            if (err) {
-                throw new Error(err)
-                return response.status(500).json({
-                    error: err
-                })
-            }
+        const saltRound = 10;
+        const hashPassword = await bcrypt.hash(password, saltRound);
 
-            const contact = new Contact({
-                name,
-                phone,
-                token,
-                password: hashPassword
+        const payload = {
+          name,
+          phone,
+        };
+        return jwt.sign(payload, process.env.JWT_SECRET_KEY, { issuer: "growursocials.com" }, (err, token) => {
+          if (err) {
+            // throw new Error(err);
+            return response.status(500).json({
+              error: err,
             });
-            
-            contact.save()
-                .then((resp) => {
-		    const user = { ...resp.toJSON(), password }
-                    return response.status(201).json({
-		    user,
-                    message: "Account created"
-          })
-                })
-                .catch((err) => response.status(500).json({ error: err.message }));
-        })
+          }
+
+          const contact = new Contact({
+            name,
+            phone,
+            token,
+            password: hashPassword,
+          });
+
+          return contact
+            .save()
+            .then((resp) => {
+              const user = { ...resp.toJSON(), password };
+              return response.status(201).json({
+                user,
+                message: "Account created",
+              });
+            })
+            .catch((error) => response.status(500).json({ error: error.message }));
+        });
       }
-      
+
       return response.status(400).json({
         error: "The phone number and sms code does not match",
       });
@@ -178,126 +195,125 @@ app.post("/api/auth/verify", (request, response) => {
 
 // get all vcards
 app.get("/api/vcards", async (request, response) => {
-  const page = Number(request.query.page) || 1
-  const limiter = 10
-  const offset = (page - 1) * limiter
+  const page = Number(request.query.page) || 1;
+  const limiter = 10;
+  const offset = (page - 1) * limiter;
 
   const vcards = await Vcard.find().sort({ date: "desc" }).limit(limiter).skip(offset);
-  const count = await Vcard.count()
+  const count = await Vcard.count();
   return response.status(200).json({
-      vcards,
-      totalPages: Math.ceil(count/limiter),
-      currentPage: page,
-      message: "vcards retrieved"
-      })
-
+    vcards,
+    totalPages: Math.ceil(count / limiter),
+    currentPage: page,
+    message: "vcards retrieved",
+  });
 });
 
-// get single vcard 
+// get single vcard
 // TODO: verify password, change method to correspond
 app.post("/api/vcards/:vcardId", validateToken, async (request, response) => {
-    const { vcardId } = request.params
-    const { password } = request.body
-    
-    const contact = await Contact.findOne({ phone: request.user.phone})
-    const validPassword = await bcrypt.compare(password, contact.password)
-    if (!validPassword) {
-        return response.status(400).json({
-            error: "invalid user details"
-        })
-    }
-    
-    const vcard = await Vcard.findById(vcardId)
-    if (!vcard) {
-        return response.status(404).json({
-            error: "vcard not found"
-        })
-    }
-    logger.info(contact)
-    if (contact.vcards.indexOf(vcardId) == -1) {
-        contact.vcards = contact.vcards.concat(vcardId)
-        contact.downloads = vcard.totalContacts?.length || 20
-        await contact.save()
-    }
-    
-    const filename = `GUS ${formattedDate(vcard.date)}`
-    
-    response.set("Content-Type", `text/vcard; name="${filename}.vcf"`)
-    response.set("Content-Disposition", `inline; filename="${filename}.vcf"`)
-    
-    response.status(200).send(vcard.vcf.toString())
-})
+  const { vcardId } = request.params;
+  const { password } = request.body;
+
+  const contact = await Contact.findOne({ phone: request.user.phone });
+  const validPassword = await bcrypt.compare(password, contact.password);
+  if (!validPassword) {
+    return response.status(400).json({
+      error: "invalid user details",
+    });
+  }
+
+  const vcard = await Vcard.findById(vcardId);
+  if (!vcard) {
+    return response.status(404).json({
+      error: "vcard not found",
+    });
+  }
+  logger.info(contact);
+  if (contact.vcards.indexOf(vcardId) === -1) {
+    contact.vcards = contact.vcards.concat(vcardId);
+    contact.downloads = vcard.totalContacts?.length || 20;
+    await contact.save();
+  }
+
+  const filename = `GUS ${formattedDate(vcard.date)}`;
+
+  response.set("Content-Type", `text/vcard; name="${filename}.vcf"`);
+  response.set("Content-Disposition", `inline; filename="${filename}.vcf"`);
+
+  return response.status(200).send(vcard.vcf.toString());
+});
 
 // for testing
-app.get("/api/vcards/:id", async(request, response) => {
-    const vcard = await Vcard.findById(request.params.id)
-    if (!vcard) {
-        return response.status(404).json({
-            error: "vcard not found"
-        })
-    }
-    
-    response.set("Content-Type", `text/vcard; name="${new Date().toDateString()}.vcf"`)
-    response.set("Content-Disposition", `inline; filename="${new Date().toDateString()}.vcf"`)
-    
-    response.status(200).send(vcard.vcf.toString())
-})
+app.get("/api/vcards/:id", async (request, response) => {
+  const vcard = await Vcard.findById(request.params.id);
+  if (!vcard) {
+    return response.status(404).json({
+      error: "vcard not found",
+    });
+  }
+
+  response.set("Content-Type", `text/vcard; name="${new Date().toDateString()}.vcf"`);
+  response.set("Content-Disposition", `inline; filename="${new Date().toDateString()}.vcf"`);
+
+  return response.status(200).send(vcard.vcf.toString());
+});
 
 app.get("/api/payment/verify/:reference", async (request, response) => {
-    const { reference } = request.params
-    logger.info("payment route") 
-    const result = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
-        headers: { Authorization: process.env.PAYSTACK_SECRET_KEY}
-    })
-    logger.info(result.data)
-    response.status(200).json({ message: "payment successful"})
-})
+  const { reference } = request.params;
+  logger.info("payment route");
+  const result = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
+    headers: { Authorization: process.env.PAYSTACK_SECRET_KEY },
+  });
+  logger.info(result.data);
+  response.status(200).json({ message: "payment successful" });
+});
 
 // TODO: protect route
-app.delete("/api/contacts/:phone", validateToken ,async (request, response) => {
-    const { phone } = request.params
-    
-    const adminContact = await Contact.findOne({phone: request.user.phone})
-    if (adminContact.phone !== process.env.ADMIN_PHONE) {
-        return response.status(403).end()
-    }
-    
-    const contact = await Contact.findOneAndRemove({phone})
-    if (!contact) {
-        return response.status(404).json({
-            error: "contact not found"
-        })
-    }
+app.delete("/api/contacts/:phone", validateToken, async (request, response) => {
+  const { phone } = request.params;
 
-    // find contacts by date
-    const compiledDate = contact.joined
-    const compiledDay = compiledDate.getDay()
-    const compiledMonth = compiledDate.getMonth()
-    const compiledYear = compiledDate.getFullYear()
+  const adminContact = await Contact.findOne({ phone: request.user.phone });
+  if (adminContact.phone !== process.env.ADMIN_PHONE) {
+    return response.status(403).end();
+  }
 
-    const dayRange = {
-        $gte: new Date(compiledYear, compiledMonth, compiledDay),
-        $lt: new Date(compiledYear, compiledMonth, compiledDay+1)
-    }
-    
-    // remove vcard for affected date
-    const vcard = await Vcard.findOneAndRemove({date: dayRange})
-    
-    // recompile contact
-    const contactsCompiledOnDate = await Contact.find({joined: dayRange})
-    
-    logger.info("contacts compiled on affected date", formattedDate(compiledDate))
-    if (contactsCompiledOnDate.length) {
-        logger.info("==== RECOMPILING VCARD ====")
-        const filename = `${formattedDate(compiledDate)}.vcf`
-        await vcardUtils.createVCF(filename, contactsCompiledOnDate)
-        await vcardUtils.saveVCF(filename, contactsCompiledOnDate.length)
-    }
-    
-    response.status(204).json({
-        message: "contact removed"
-    })
-})
+  const contact = await Contact.findOneAndRemove({ phone });
+  if (!contact) {
+    return response.status(404).json({
+      error: "contact not found",
+    });
+  }
+
+  // find contacts by date
+  const compiledDate = contact.joined;
+  const compiledDay = compiledDate.getDay();
+  const compiledMonth = compiledDate.getMonth();
+  const compiledYear = compiledDate.getFullYear();
+
+  const dayRange = {
+    $gte: new Date(compiledYear, compiledMonth, compiledDay),
+    $lt: new Date(compiledYear, compiledMonth, compiledDay + 1),
+  };
+
+  // remove vcard for affected date
+  await Vcard.findOneAndRemove({ date: dayRange });
+
+  // recompile contact
+  const contactsCompiledOnDate = await Contact.find({ joined: dayRange });
+
+  logger.info("contacts compiled on affected date", formattedDate(compiledDate));
+  if (contactsCompiledOnDate.length) {
+    logger.info("==== RECOMPILING VCARD ====");
+    const filename = `${formattedDate(compiledDate)}.vcf`;
+    await vcardUtils.createVCF(filename, contactsCompiledOnDate);
+    await vcardUtils.saveVCF(filename, contactsCompiledOnDate.length);
+  }
+
+  return response.status(204).json({
+    message: "contact removed",
+  });
+});
 
 const invalidEndpoint = (request, response) => {
   response.status(404).json({
@@ -315,7 +331,7 @@ const errorHandler = (error, request, response, next) => {
   }
   if (error.name === "CastError") {
     return response.status(400).json({
-      error: "malformed id"
+      error: "malformed id",
     });
   }
   if (error.name === "MongooseError") {
@@ -331,23 +347,6 @@ const errorHandler = (error, request, response, next) => {
   return next(error);
 };
 app.use(errorHandler);
-
-function validateToken(req, res, next) {
-    const auth = req.get("Authorization")
-    const authType = auth?.startsWith("Bearer ")
-    if (!auth || !authType) {
-        return res.status(401).json({
-            error: "missing or invalid token"
-        })
-    }
-    
-    const token = auth.split(" ")[1]
-    jwt.verify(token, process.env.JWT_SECRET_KEY, (err, decodedToken) => {
-        if (err) next(err)
-        req.user = decodedToken
-    })
-    next()
-}
 
 app.disable("x-powered-by");
 module.exports = app;
