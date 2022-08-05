@@ -72,7 +72,7 @@ app.get("/unseed", (request, response) => {
 });
 
 // new user registration
-app.post("/api/auth", (request, response) => {
+app.post("/api/auth", async (request, response) => {
   // TODO: check if number is already in db, also check redis-server
   const { name, phone } = request.body;
 
@@ -81,6 +81,22 @@ app.post("/api/auth", (request, response) => {
       error: "all fields are required",
     });
   }
+  
+  const contactInRedis = await redisClient.get(phone)
+  if (contactInRedis) {
+      return response.status(200).json({
+          message: "a verification code was sent to your whatsapp"
+      })
+  }
+  
+  const contactInDb = await Contact.findOne({phone})
+  if (contactInDb) {
+      return response.status(200).json({
+	  user: contactInDb,
+          message: "contact already exist"
+      })
+  }
+  
   const user = {
     name,
     phone,
@@ -88,12 +104,9 @@ app.post("/api/auth", (request, response) => {
   // logger.info(user);
   const verificationCode = genVerifyCode();
   logger.info("generated code", verificationCode);
-  // remove callback
-  redisClient
-    .set(user.phone, `${verificationCode}`, "EX", 3600)
-    .then((res) => logger.info(res))
-    .catch((err) => logger.error(err));
 
+  await redisClient
+    .set(user.phone, `${verificationCode}`, "EX", 3600)
 //  twilioClient.messages
 //    .create({
 //      from: process.env.TWILIO_PHONE_NO,
