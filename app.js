@@ -11,6 +11,7 @@ const { nanoid } = require("nanoid");
 const cron = require("node-cron")
 const jwt = require("jsonwebtoken")
 const bcrypt = require("bcryptjs")
+const axios = require("axios")
 
 const redisClient = require("./utils/redisClient");
 //const twilioClient = require("./utils/twilioClient");
@@ -92,7 +93,7 @@ app.post("/api/auth", async (request, response) => {
   const contactInDb = await Contact.findOne({phone})
   if (contactInDb) {
       return response.status(200).json({
-	  user: contactInDb,
+          user: contactInDb,
           message: "contact already exist"
       })
   }
@@ -240,6 +241,16 @@ app.get("/api/vcards/:id", async(request, response) => {
     response.set("Content-Disposition", `inline; filename="${new Date().toDateString()}.vcf"`)
     
     response.status(200).send(vcard.vcf.toString())
+})
+
+app.get("/api/payment/verify/:reference", async (request, response) => {
+    const { reference } = request.params
+    logger.info("payment route") 
+    const result = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
+        headers: { Authorization: process.env.PAYSTACK_SECRET_KEY}
+    })
+    logger.info(result.data)
+    response.status(200).json({ message: "payment successful"})
 })
 
 // TODO: protect route
