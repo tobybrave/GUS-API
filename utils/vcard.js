@@ -6,9 +6,9 @@ const Vcard = require("../models/vcard");
 const v = new VCardJS();
 const adminContact = [
     {
-        name: "MofeJesu Paul",
-        phone: "08030000000",
-        note: "Hey there! I'm Mofejesu the GUS 🍧 admin. Contact for help"
+        name: process.env.ADMIN_NAME,
+        phone: process.env.ADMIN_PHONE,
+        note: `Hey there! I'm ${process.env.ADMIN_NAME} the GUS 🍧 admin. Contact for help`
     }
     ]
 
