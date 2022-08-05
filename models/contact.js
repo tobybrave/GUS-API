@@ -25,6 +25,14 @@ const contactSchema = new mongoose.Schema({
     type: Date,
     default: new Date(),
   },
+  downloads: {
+    type: Number,
+    default: 0,
+  },
+  vcards: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Vcard"
+  }]
 });
 
 /* eslint-disable */

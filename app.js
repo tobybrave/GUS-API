@@ -201,6 +201,12 @@ app.post("/api/vcards/:vcardId", validateToken, async (request, response) => {
             error: "vcard not found"
         })
     }
+    logger.info(contact)
+    if (contact.vcards.indexOf(vcardId) == -1) {
+        contact.vcards = contact.vcards.concat(vcardId)
+        contact.downloads = vcard.totalContacts?.length || 20
+        await contact.save()
+    }
     
     const filename = `GUS ${formattedDate(vcard.date)}`
     
