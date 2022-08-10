@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const beautifyUnique = require("mongoose-beautiful-unique-validation");
 
 const contactSchema = new mongoose.Schema({
   name: {
@@ -8,6 +9,7 @@ const contactSchema = new mongoose.Schema({
   phone: {
     type: String,
     required: true,
+    unique: "phone already exist",
   },
   password: {
     type: String,
@@ -37,6 +39,7 @@ const contactSchema = new mongoose.Schema({
   ],
 });
 
+contactSchema.plugin(beautifyUnique)
 /* eslint-disable */
 contactSchema.set("toJSON", {
   transform: (document, obj) => {
