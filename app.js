@@ -12,6 +12,7 @@ const cron = require("node-cron");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const axios = require("axios");
+const Joi = require("joi");
 
 const redisClient = require("./utils/redisClient");
 // const twilioClient = require("./utils/twilioClient");
@@ -37,6 +38,11 @@ const formattedDate = (moment) => {
 
   return `${year}-${pad(month + 1)}-${pad(day)}`;
 };
+const schema = Joi.object({
+    name: Joi.string().regex(/^[a-z ,.'-]+$/i).min(2).max(40).required(),
+    phone: Joi.string().regex(/^\+(?:[0-9] ?){6,14}[0-9]$/).required(),
+    package: Joi.string().valid("free", "premium").lowercase()
+})
 
 function validateToken(req, res, next) {
   const auth = req.get("Authorization");
@@ -53,6 +59,13 @@ function validateToken(req, res, next) {
     req.user = decodedToken;
   });
   return next();
+}
+function validateReqData (req, res, next) {
+    const value = schema.validate(req.body)
+    if (value.error) {
+        next(value.error)
+    }
+    return next()
 }
 
 cron.schedule("*/20 * * * *", async () => {
@@ -90,15 +103,9 @@ app.get("/unseed", (request, response) => {
 });
 
 // new user registration
-app.post("/api/auth", async (request, response) => {
+app.post("/api/auth", validateReqData, async (request, response, next) => {
   // TODO: check if number is already in db, also check redis-server
   const { name, phone } = request.body;
-
-  if (!(name && phone)) {
-    return response.status(400).json({
-      error: "all fields are required",
-    });
-  }
 
   const contactInRedis = await redisClient.get(phone);
   if (contactInRedis) {
@@ -324,14 +331,15 @@ app.use(invalidEndpoint);
 
 const errorHandler = (error, request, response, next) => {
   logger.error(error);
-  if (error.name === "ValidatorError") {
+  if (error.name === "ValidationError") {
     return response.status(400).json({
-      error: error.message,
+      error: error.message.split(":")[0].replace(/['"]/g, ""),
+      errorMessage: "Invalid request data. Please review request and retry again"
     });
   }
   if (error.name === "CastError") {
     return response.status(400).json({
-      error: "malformed id",
+      error: "malformed id"
     });
   }
   if (error.name === "MongooseError") {
