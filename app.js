@@ -206,7 +206,7 @@ app.get("/api/vcards", async (request, response) => {
   const limiter = 10;
   const offset = (page - 1) * limiter;
 
-  const vcards = await Vcard.find().sort({ date: "desc" }).limit(limiter).skip(offset);
+  const vcards = await Vcard.find().select("date").sort({ date: "desc" }).limit(limiter).skip(offset);
   const count = await Vcard.count();
   return response.status(200).json({
     vcards,

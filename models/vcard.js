@@ -17,12 +17,9 @@ const vcardSchema = new mongoose.Schema({
 
 /* eslint-disable */
 vcardSchema.set("toJSON", {
+  virtuals: true,
   transform: (doc, obj) => {
-    obj.id = obj._id.toString();
-
     delete obj._id;
-    delete obj.__v;
-    delete obj.vcf;
   },
 });
 
