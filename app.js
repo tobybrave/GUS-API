@@ -32,7 +32,7 @@ const formattedDate = (moment) => {
   const pad = (n) => (n >= 10 ? n : `0${n}`);
 
   const date = moment || new Date();
-  const day = date.getDay();
+  const day = date.getDate();
   const month = date.getMonth();
   const year = date.getFullYear();
 
