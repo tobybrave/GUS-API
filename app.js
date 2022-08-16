@@ -15,7 +15,7 @@ const axios = require("axios");
 const Joi = require("joi");
 
 const redisClient = require("./utils/redisClient");
-// const twilioClient = require("./utils/twilioClient");
+const twilioClient = require("./utils/twilioClient");
 const genVerifyCode = require("./utils/genVerifyCode");
 const logger = require("./utils/logger");
 const data = require("./models/seed.json");
@@ -27,6 +27,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static("build"));
 
 const formattedDate = (moment) => {
   const pad = (n) => (n >= 10 ? n : `0${n}`);
@@ -97,6 +98,7 @@ app.post("/seed", async (request, response) => {
 });
 app.get("/unseed", (request, response) => {
   Vcard.deleteMany({}).then(() => logger.info("contacts db cleared"));
+  // redisClient.keys("*").then(results => results.forEach(key => redisClient.del(key))).catch(logger.error)
   Contact.deleteMany({})
     .then(() => response.status(200).json({ message: "db cleared" }))
     .catch((err) => response.status(500).json(err));
@@ -131,18 +133,18 @@ app.post("/api/auth", validateReqData, async (request, response, next) => {
   logger.info("generated code", verificationCode);
 
   await redisClient.set(user.phone, `${verificationCode}`, "EX", 3600);
-  //  twilioClient.messages
-  //    .create({
-  //      from: process.env.TWILIO_PHONE_NO,
-  //      to: `${user.phone}`,
-  //      body: `Hello ${user.name}! Your WassapViews verification code is: ${verificationCode}`,
-  //    })
-  //    .then((message) => logger.info(message.sid))
-  //    .catch((err) => logger.error(err));
-  //
+    twilioClient.messages
+      .create({
+        from: `whatsapp:${process.env.TWILIO_WHATSAPP_PHONE_NO}`,
+        to: `whatsapp:${user.phone}`,
+        body: `Hello ${user.name}! Your GUS verification code is: ${verificationCode}`,
+      })
+      .then((message) => logger.info(message.sid))
+      .catch((err) => logger.error(err));
+  
   return response.status(202).json({
     user,
-    message: "Account creation is process. Kindly check your whatsapp for your verification code",
+    message: "Account creation in progress. Kindly check your whatsapp for your verification code",
   });
 });
 
