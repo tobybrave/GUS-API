@@ -40,10 +40,16 @@ const formattedDate = (moment) => {
   return `${year}-${pad(month + 1)}-${pad(day)}`;
 };
 const schema = Joi.object({
-    name: Joi.string().regex(/^[a-z ,.'-]+$/i).min(2).max(40).required(),
-    phone: Joi.string().regex(/^\+(?:[0-9] ?){6,14}[0-9]$/).required(),
-    package: Joi.string().valid("free", "premium").lowercase()
-})
+  name: Joi.string()
+    .regex(/^[a-z ,.'-]+$/i)
+    .min(2)
+    .max(40)
+    .required(),
+  phone: Joi.string()
+    .regex(/^\+(?:[0-9] ?){6,14}[0-9]$/)
+    .required(),
+  package: Joi.string().valid("free", "premium").lowercase(),
+});
 
 function validateToken(req, res, next) {
   const auth = req.get("Authorization");
@@ -61,12 +67,12 @@ function validateToken(req, res, next) {
   });
   return next();
 }
-function validateReqData (req, res, next) {
-    const value = schema.validate(req.body)
-    if (value.error) {
-        next(value.error)
-    }
-    return next()
+function validateReqData(req, res, next) {
+  const value = schema.validate(req.body);
+  if (value.error) {
+    next(value.error);
+  }
+  return next();
 }
 
 cron.schedule("*/20 * * * *", async () => {
@@ -105,8 +111,7 @@ app.get("/unseed", (request, response) => {
 });
 
 // new user registration
-app.post("/api/auth", validateReqData, async (request, response, next) => {
-  // TODO: check if number is already in db, also check redis-server
+app.post("/api/auth", validateReqData, async (request, response) => {
   const { name, phone } = request.body;
 
   const contactInRedis = await redisClient.get(phone);
@@ -133,15 +138,15 @@ app.post("/api/auth", validateReqData, async (request, response, next) => {
   logger.info("generated code", verificationCode);
 
   await redisClient.set(user.phone, `${verificationCode}`, "EX", 3600);
-    twilioClient.messages
-      .create({
-        from: `whatsapp:${process.env.TWILIO_WHATSAPP_PHONE_NO}`,
-        to: `whatsapp:${user.phone}`,
-        body: `Hello ${user.name}! Your GUS verification code is: ${verificationCode}`,
-      })
-      .then((message) => logger.info(message.sid))
-      .catch((err) => logger.error(err));
-  
+  twilioClient.messages
+    .create({
+      from: `whatsapp:${process.env.TWILIO_WHATSAPP_PHONE_NO}`,
+      to: `whatsapp:${user.phone}`,
+      body: `Hello ${user.name}! Your GUS verification code is: ${verificationCode}`,
+    })
+    .then((message) => logger.info(message.sid))
+    .catch((err) => logger.error(err));
+
   return response.status(202).json({
     user,
     message: "Account creation in progress. Kindly check your whatsapp for your verification code",
@@ -336,12 +341,12 @@ const errorHandler = (error, request, response, next) => {
   if (error.name === "ValidationError") {
     return response.status(400).json({
       error: error.message.split(":")[0].replace(/['"]/g, ""),
-      errorMessage: "Invalid request data. Please review request and retry again"
+      errorMessage: "Invalid request data. Please review request and retry again",
     });
   }
   if (error.name === "CastError") {
     return response.status(400).json({
-      error: "malformed id"
+      error: "malformed id",
     });
   }
   if (error.name === "MongooseError") {
