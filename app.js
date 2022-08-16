@@ -1,9 +1,3 @@
-// TODOS
-//     === NEEDS ===
-//     whatsapp api for verification process
-//     === WANTS ===
-//     joi for verification
-
 require("express-async-errors");
 const express = require("express");
 const cors = require("cors");
