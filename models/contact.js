@@ -39,7 +39,8 @@ const contactSchema = new mongoose.Schema({
   ],
 });
 
-contactSchema.plugin(beautifyUnique)
+contactSchema.plugin(beautifyUnique);
+
 /* eslint-disable */
 contactSchema.set("toJSON", {
   transform: (document, obj) => {
