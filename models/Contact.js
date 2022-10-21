@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const beautifyUnique = require("mongoose-beautiful-unique-validation");
 
-const contactSchema = new mongoose.Schema({
+const ContactSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
@@ -39,10 +39,10 @@ const contactSchema = new mongoose.Schema({
   ],
 });
 
-contactSchema.plugin(beautifyUnique);
+ContactSchema.plugin(beautifyUnique);
 
 /* eslint-disable */
-contactSchema.set("toJSON", {
+ContactSchema.set("toJSON", {
   transform: (document, obj) => {
     obj.id = obj._id.toString();
     obj.joined = obj.joined.toDateString();
@@ -53,4 +53,4 @@ contactSchema.set("toJSON", {
   },
 });
 
-module.exports = mongoose.model("Contact", contactSchema);
+module.exports = mongoose.model("Contact", ContactSchema);

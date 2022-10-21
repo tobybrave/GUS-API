@@ -38,7 +38,7 @@ function payWithPaystack(e) {
   let handler = PaystackPop.setup({
     email,
     phone,
-    key: 'pk_test_3baa29676132d0f704cc5a21a3a764d9697fc60', // Replace with your public key
+    key: 'pk_test_3baa29676132d0f704cc5a21a3a764d9697fc606', // Replace with your public key
     amount: 500 * 100, //document.getElementById("amount").value * 100,
     ref: `${phone}-${formattedDate()}`,
     onClose: function(){

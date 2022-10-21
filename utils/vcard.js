@@ -1,7 +1,7 @@
 const VCardJS = require("vcards-js");
 const fs = require("fs");
 const logger = require("./logger");
-const Vcard = require("../models/vcard");
+const Vcard = require("../models/Vcard");
 
 const v = new VCardJS();
 const adminContact = [
