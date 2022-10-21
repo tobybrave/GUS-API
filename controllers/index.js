@@ -145,7 +145,7 @@ async function blacklistContact(req, res) {
 
   // find contacts by date
   const compiledDate = contact.joined;
-  const compiledDay = compiledDate.getDay();
+  const compiledDay = compiledDate.getDate();
   const compiledMonth = compiledDate.getMonth();
   const compiledYear = compiledDate.getFullYear();
 
@@ -156,7 +156,6 @@ async function blacklistContact(req, res) {
 
   // remove vcard for affected date
   await Vcard.findOneAndRemove({ date: dayRange });
-
   // recompile contact
   const contactsCompiledOnDate = await Contact.find({ joined: dayRange });
 
@@ -171,13 +170,13 @@ async function blacklistContact(req, res) {
   const reportedContact = new BlockedContact({
     name: contact.name,
     phone: contact.phone,
-    reason,
+    reason: reason.replace("+", " "),
   });
   await reportedContact.save();
 
   return res.status(204).json({
     success: true,
-    message: "Contact removed",
+    message: "Contact blacklisted",
   });
 }
 

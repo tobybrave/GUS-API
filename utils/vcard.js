@@ -8,7 +8,7 @@ const adminContact = [
   {
     name: process.env.ADMIN_NAME,
     phone: process.env.ADMIN_PHONE,
-    note: `Hey there! I'm ${process.env.ADMIN_NAME} the GUS 🍧 admin. Contact for help`,
+    note: `Hey there! I'm ${process.env.ADMIN_NAME} the GUS🍧 admin. Contact for help`,
   },
 ];
 
@@ -45,10 +45,7 @@ const saveVCF = (fName, total) => {
       totalContacts: total,
       vcf: content,
     });
-    vcard
-      .save()
-      .then(() => logger.info("saved vcard to db"))
-      .catch(logger.error);
+    vcard.save().catch(logger.error);
 
     fs.unlinkSync(`./${fName}`);
   });

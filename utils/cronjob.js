@@ -20,6 +20,7 @@ function cronjob() {
       await vcardUtils.createVCF(filename, dbContacts);
       await vcardUtils.saveVCF(filename, dbContacts.length);
     }
+    logger.info("cronjob done");
   });
 }
 
