@@ -7,16 +7,6 @@ const vcardUtils = require("../utils/vcard");
 const formatDate = require("../utils/dateFormatter");
 const logger = require("../utils/logger");
 
-const pong = (req, res) => {
-  res.send("pong");
-};
-
-async function healthCheck(req, res) {
-  const contacts = await Contact.find();
-
-  res.status(200).json(contacts);
-}
-
 async function register(req, res) {
   const { name, phone, password } = req.body;
 
@@ -180,4 +170,4 @@ async function blacklistContact(req, res) {
   });
 }
 
-module.exports = { pong, healthCheck, register, getAllVcards, getVcard, blacklistedContacts, blacklistContact };
+module.exports = { register, getAllVcards, getVcard, blacklistedContacts, blacklistContact };
