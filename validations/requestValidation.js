@@ -2,7 +2,7 @@ const Joi = require("joi");
 
 const schema = Joi.object({
   name: Joi.string()
-    .regex(/^[a-z ,.'-]+$/i)
+    .regex(/^[a-z ,.'_-]+$/i)
     .min(2)
     .max(40)
     .required(),
