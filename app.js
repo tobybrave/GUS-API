@@ -4,6 +4,7 @@ const cors = require("cors");
 const axios = require("axios");
 const morgan = require("morgan");
 const path = require("path");
+const fs = require("fs");
 
 const logger = require("./utils/logger");
 const data = require("./models/seed.json");
@@ -60,7 +61,12 @@ app.get("/api/payment/verify/:reference", async (request, response) => {
     headers: { Authorization: process.env.PAYSTACK_SECRET_KEY },
   });
   logger.info(result.data);
-  response.status(200).json({ message: "payment successful" });
+
+  if (result.data.data.status === "success") {
+    fs.appendFileSync("./premium.txt", JSON.stringify(result.data.data.metadata));
+    return response.status(200).json({ message: "transaction successful" });
+  }
+  return response.status(402).json({ message: "transaction not successful" });
 });
 
 // app.get("/*", (request, response) => {
