@@ -13,7 +13,7 @@ const BlockedContactSchema = new mongoose.Schema({
   },
   removedAt: {
     type: Date,
-    default: new Date(),
+    default: Date.now,
   },
   reason: {
     type: String,

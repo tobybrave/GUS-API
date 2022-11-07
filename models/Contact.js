@@ -25,7 +25,7 @@ const ContactSchema = new mongoose.Schema({
   },
   joined: {
     type: Date,
-    default: new Date(),
+    default: Date.now,
   },
   downloads: {
     type: Number,
