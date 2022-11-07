@@ -4,7 +4,7 @@ const vcardSchema = new mongoose.Schema({
   date: {
     type: Date,
     required: true,
-    default: new Date(),
+    default: Date.now,
   },
   totalContacts: {
     type: Number,

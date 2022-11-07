@@ -19,7 +19,7 @@ const createVCF = (fName, contacts) => {
     v.firstName = contact.name;
     v.workPhone = contact.phone;
     v.organization = "growursocials";
-    v.nameSuffix = "GUS 🍧";
+    v.nameSuffix = "GUS🍧";
     v.note = contact.note || "This contact is from growursocials";
 
     const contactVCF = v.getFormattedString();
