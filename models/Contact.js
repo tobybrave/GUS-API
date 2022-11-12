@@ -37,6 +37,10 @@ const ContactSchema = new mongoose.Schema({
       ref: "Vcard",
     },
   ],
+  batch: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Batch",
+  },
 });
 
 ContactSchema.plugin(beautifyUnique);

@@ -10,7 +10,7 @@ function errorHandler(error, request, response, next) {
   if (error.name === "CastError") {
     return response.status(404).json({
       success: false,
-      message: "The vcard the specified ID not found",
+      message: "The vcard with the specified ID not found",
       error,
     });
   }

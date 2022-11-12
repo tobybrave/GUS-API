@@ -1,9 +1,8 @@
 const mongoose = require("mongoose");
 
 const vcardSchema = new mongoose.Schema({
-  date: {
+  createdAt: {
     type: Date,
-    required: true,
     default: Date.now,
   },
   totalContacts: {
