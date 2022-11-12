@@ -6,6 +6,7 @@ const BlockedContact = require("../models/BlockedContact");
 const vcardUtils = require("../utils/vcard");
 const formatDate = require("../utils/dateFormatter");
 const logger = require("../utils/logger");
+const Batch = require("../models/Batch");
 
 const pong = (req, res) => {
   res.send("pong");
@@ -54,6 +55,23 @@ async function register(req, res) {
     password: hashPassword,
   });
 
+  /* eslint-disable no-underscore-dangle */
+  const batches = await Batch.find();
+  const lastBatchIdx = batches.length - 1;
+  if (!batches.length || batches[lastBatchIdx].contacts.length === 5) {
+    const batch = new Batch();
+    contact.batch = batch._id;
+    batch.contacts = batch.contacts.concat(contact._id);
+
+    await batch.save();
+  } else {
+    const lastBatch = batches[lastBatchIdx];
+    contact.batch = lastBatch._id;
+    lastBatch.contacts = lastBatch.contacts.concat(contact._id);
+
+    await lastBatch.save();
+  }
+
   const savedContact = await contact.save();
 
   return res.status(201).json({
@@ -63,14 +81,24 @@ async function register(req, res) {
   });
 }
 
-async function getAllVcards(req, res) {
+async function getVcardsPerBatch(req, res) {
+  const contact = await Contact.findOne({ phone: req.user.phone }).populate("batch");
+
   const page = Number(req.query.page) || 1;
   const limiter = 10;
   // const offset = (page - 1) * limiter;
 
-  const vcards = await Vcard.find().select("date").sort({ date: "desc" });
+  const vcards = await Vcard.find({
+    createdAt: {
+      $gte: contact.batch.createdAt,
+      $lte: contact.batch.updatedAt,
+    },
+  })
+    .select("-vcf")
+    .sort({ date: "desc" });
   // .limit(limiter).skip(offset);
-  const count = await Vcard.count();
+
+  const count = await vcards.length;
   return res.status(200).json({
     vcards,
     totalPages: Math.ceil(count / limiter),
@@ -180,4 +208,4 @@ async function blacklistContact(req, res) {
   });
 }
 
-module.exports = { pong, healthCheck, register, getAllVcards, getVcard, blacklistedContacts, blacklistContact };
+module.exports = { pong, healthCheck, register, getVcardsPerBatch, getVcard, blacklistedContacts, blacklistContact };

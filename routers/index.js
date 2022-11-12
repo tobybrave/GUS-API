@@ -5,17 +5,17 @@ const {
   pong,
   healthCheck,
   register,
-  getAllVcards,
   getVcard,
   blacklistContact,
   blacklistedContacts,
+  getVcardsPerBatch,
 } = require("../controllers");
 
 router.get("/ping", pong);
 router.get("/health-check", healthCheck);
 
 router.post("/register", requestValidation, register);
-router.get("/vcards", getAllVcards);
+router.get("/vcards", tokenValidation, getVcardsPerBatch);
 router.post("/vcards/:id", tokenValidation, getVcard);
 router.get("/contacts/blacklisted", blacklistedContacts);
 router.delete("/contacts/:phone", tokenValidation, blacklistContact);
