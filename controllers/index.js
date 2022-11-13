@@ -48,7 +48,7 @@ async function register(req, res) {
   /* eslint-disable no-underscore-dangle */
   const batches = await Batch.find();
   const lastBatchIdx = batches.length - 1;
-  if (!batches.length || batches[lastBatchIdx].contacts.length === 5) {
+  if (!batches.length || batches[lastBatchIdx].contacts.length === 200) {
     const batch = new Batch();
     contact.batch = batch._id;
     batch.contacts = batch.contacts.concat(contact._id);
@@ -85,7 +85,7 @@ async function getVcardsPerBatch(req, res) {
     },
   })
     .select("-vcf")
-    .sort({ date: "desc" });
+    .sort({ createdAt: "desc" });
   // .limit(limiter).skip(offset);
 
   const count = await vcards.length;
