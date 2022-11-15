@@ -122,7 +122,7 @@ async function getVcard(req, res) {
 
   if (contact.vcards.indexOf(id) === -1) {
     contact.vcards = contact.vcards.concat(id);
-    contact.downloads = vcard.totalContacts?.length || 20;
+    contact.downloads = vcard.totalContacts?.length || 0;
     await contact.save();
   }
 
