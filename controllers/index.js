@@ -23,7 +23,6 @@ async function register(req, res) {
   const contactInDb = await Contact.findOne({ phone });
   if (contactInDb) {
     const verifyPassword = await bcrypt.compare(password, contactInDb.password);
-    console.log(verifyPassword);
     if (!verifyPassword) {
       return res.status(400).json({
         success: false,
