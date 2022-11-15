@@ -22,6 +22,14 @@ async function register(req, res) {
 
   const contactInDb = await Contact.findOne({ phone });
   if (contactInDb) {
+    const verifyPassword = await bcrypt.compare(password, contactInDb.password);
+    console.log(verifyPassword);
+    if (!verifyPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Incorrect phone or password",
+      });
+    }
     return res.status(200).json({
       success: true,
       message: "contact already exist",
@@ -122,7 +130,6 @@ async function getVcard(req, res) {
 
   if (contact.vcards.indexOf(id) === -1) {
     contact.vcards = contact.vcards.concat(id);
-    contact.downloads = vcard.totalContacts?.length || 0;
     await contact.save();
   }
 
