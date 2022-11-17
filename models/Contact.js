@@ -15,9 +15,6 @@ const ContactSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  token: {
-    type: String,
-  },
   package: {
     type: String,
     enum: ["free", "premium"],

@@ -32,26 +32,19 @@ async function register(req, res) {
 
   const contactInDb = await Contact.findOne({ phone });
   if (contactInDb) {
-    return res.status(200).json({
-      success: true,
-      message: "contact already exist",
-      user: contactInDb,
+    return res.status(400).json({
+      success: false,
+      message: "The phone number has been taken",
+      error: "contact already exist",
     });
   }
 
   const saltRound = 10;
   const hashPassword = await bcrypt.hash(password, saltRound);
 
-  const payload = {
-    name,
-    phone,
-  };
-  const token = await jwt.sign(payload, process.env.JWT_SECRET_KEY, { issuer: "growursocials.com" });
-
   const contact = new Contact({
     name,
     phone,
-    token,
     password: hashPassword,
   });
 
@@ -72,12 +65,46 @@ async function register(req, res) {
     await lastBatch.save();
   }
 
+  const payload = { name, phone };
+  const token = jwt.sign(payload, process.env.JWT_SECRET_KEY, { issuer: "growursocials.com", expiresIn: "2d" });
+
   const savedContact = await contact.save();
+  savedContact.token = token;
 
   return res.status(201).json({
     success: true,
     message: "Account successfully created",
-    user: savedContact,
+    user: { ...savedContact.toJSON(), token },
+  });
+}
+
+async function login(req, res) {
+  const { phone, password } = req.body;
+  logger.info(phone, password);
+  const user = await Contact.findOne({ phone });
+  const verifyPassword = user ? await bcrypt.compare(password, user.password) : null;
+
+  if (!user || !verifyPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Incorrect phone or password",
+      error: "wrong password or phone",
+    });
+  }
+
+  const payload = {
+    phone: user.phone,
+    name: user.name,
+  };
+
+  const token = jwt.sign(payload, process.env.JWT_SECRET_KEY, { issuer: "growursocials.com", expiresIn: "7d" });
+  return res.status(200).json({
+    success: true,
+    message: "Login successful",
+    user: {
+      ...payload,
+      token,
+    },
   });
 }
 
@@ -112,7 +139,7 @@ async function getVcard(req, res) {
   const { password } = req.body;
 
   const contact = await Contact.findOne({ phone: req.user.phone });
-  const validPassword = await bcrypt.compare(password, contact.password);
+  const validPassword = await bcrypt.compare(password.toString(), contact.password);
 
   if (!validPassword) {
     return res.status(400).json({
@@ -208,4 +235,13 @@ async function blacklistContact(req, res) {
   });
 }
 
-module.exports = { pong, healthCheck, register, getVcardsPerBatch, getVcard, blacklistedContacts, blacklistContact };
+module.exports = {
+  pong,
+  healthCheck,
+  register,
+  login,
+  getVcardsPerBatch,
+  getVcard,
+  blacklistedContacts,
+  blacklistContact,
+};
