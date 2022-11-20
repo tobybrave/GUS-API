@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const requestValidation = require("../validations/requestValidation");
+const { regValidation, loginValidation } = require("../validations/requestValidation");
 const tokenValidation = require("../validations/tokenValidation");
 const {
   register,
@@ -7,9 +7,12 @@ const {
   blacklistContact,
   blacklistedContacts,
   getVcardsPerBatch,
+  login,
 } = require("../controllers");
 
-router.post("/register", requestValidation, register);
+
+router.post("/register", regValidation, register);
+router.post("/login", loginValidation, login);
 router.get("/vcards", tokenValidation, getVcardsPerBatch);
 router.post("/vcards/:id", tokenValidation, getVcard);
 router.get("/contacts/blacklisted", blacklistedContacts);

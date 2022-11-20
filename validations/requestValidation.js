@@ -1,6 +1,6 @@
 const Joi = require("joi");
 
-const schema = Joi.object({
+const regSchema = Joi.object({
   name: Joi.string()
     .regex(/^[a-z ,.'_-]+$/i)
     .min(2)
@@ -12,12 +12,27 @@ const schema = Joi.object({
   password: Joi.string().min(4).max(125).required(),
 });
 
-function requestValidation(req, res, next) {
-  const value = schema.validate(req.body);
+const loginSchema = Joi.object({
+  phone: Joi.string()
+    .regex(/^\+(?:[0-9] ?){6,14}[0-9]$/)
+    .required(),
+  password: Joi.string().min(4).max(125).required(),
+});
+
+function regValidation(req, res, next) {
+  const value = regSchema.validate(req.body);
   if (value.error) {
     next(value.error);
   }
   return next();
 }
 
-module.exports = requestValidation;
+function loginValidation(req, res, next) {
+  const value = loginSchema.validate(req.body);
+  if (value.error) {
+    next(value.error);
+  }
+  return next();
+}
+
+module.exports = { regValidation, loginValidation };
