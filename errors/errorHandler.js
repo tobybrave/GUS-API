@@ -28,6 +28,13 @@ function errorHandler(error, request, response, next) {
       error,
     });
   }
+  if (error.name === "TokenExpiredError") {
+    return response.status(401).json({
+      success: false,
+      message: "Session Timeout",
+      error,
+    });
+  }
   return next(error);
 }
 

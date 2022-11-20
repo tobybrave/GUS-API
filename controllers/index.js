@@ -80,7 +80,6 @@ async function register(req, res) {
 
 async function login(req, res) {
   const { phone, password } = req.body;
-  logger.info(phone, password);
   const user = await Contact.findOne({ phone });
   const verifyPassword = user ? await bcrypt.compare(password, user.password) : null;
 
