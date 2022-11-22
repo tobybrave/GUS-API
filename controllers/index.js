@@ -151,7 +151,7 @@ async function getVcard(req, res) {
     await contact.save();
   }
 
-  const filename = `GUS_${formatDate(vcard.date)}`;
+  const filename = `GUS_${formatDate(vcard.createdAt)}`;
 
   res.set("Content-Type", `text/vcard; name="${filename}.vcf"`);
   res.set("Content-Disposition", `filename="${filename}.vcf"`);
