@@ -13,9 +13,11 @@ const pong = (req, res) => {
 };
 
 async function healthCheck(req, res) {
+  const batches = await Batch.find();
+  const vcards = await Vcard.find().select("-vcf");
   const contacts = await Contact.find();
 
-  res.status(200).json(contacts);
+  res.status(200).json({ batches, contacts, vcards });
 }
 
 async function register(req, res) {
