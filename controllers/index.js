@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const moment = require("moment");
 const Contact = require("../models/Contact");
 const Vcard = require("../models/Vcard");
 const BlockedContact = require("../models/BlockedContact");
@@ -112,14 +113,17 @@ async function login(req, res) {
 async function getVcardsPerBatch(req, res) {
   const contact = await Contact.findOne({ phone: req.user.phone }).populate("batch");
 
+  const batchStartDate = moment(contact.batch.createdAt).utc().startOf("day").toDate();
+  const batchEndDate = moment(contact.batch.updatedAt).utc().endOf("day").toDate();
+
   const page = Number(req.query.page) || 1;
   const limiter = 10;
   // const offset = (page - 1) * limiter;
 
   const vcards = await Vcard.find({
     createdAt: {
-      $gte: contact.batch.createdAt,
-      $lte: contact.batch.updatedAt,
+      $gte: batchStartDate,
+      $lte: batchEndDate,
     },
   })
     .select("-vcf")
