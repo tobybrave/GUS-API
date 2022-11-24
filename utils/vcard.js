@@ -2,6 +2,7 @@ const VCardJS = require("vcards-js");
 const fs = require("fs");
 const logger = require("./logger");
 const Vcard = require("../models/Vcard");
+const Batch = require("../models/Batch");
 
 const v = new VCardJS();
 const adminContact = [
@@ -30,12 +31,19 @@ const createVCF = (fName, contacts) => {
   });
 };
 
-const saveVCF = (fName, total) => {
+const saveVCF = async (fName, total) => {
   logger.info("==== SAVING VCARD =====");
   const compiledAt = fName.split(".")[0];
+
   // attach admin
-  logger.info("==== ATTACHIMG ADMIN ====");
-  createVCF(fName, adminContact);
+  const batches = await Batch.find();
+  const lastBatchIdx = batches.length - 1;
+  const contactsInLastBatch = batches[lastBatchIdx].contacts.length;
+
+  if (contactsInLastBatch >= 150 && contactsInLastBatch <= 180) {
+    logger.info("==== ATTACHIMG ADMIN ====");
+    createVCF(fName, adminContact);
+  }
 
   fs.readFile(`./${fName}`, (err, content) => {
     if (err) throw new Error(err);
