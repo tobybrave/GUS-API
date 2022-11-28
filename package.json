@@ -11,9 +11,6 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier . -w"
   },
-  "keywords": [
-    "whatsapp"
-  ],
   "author": "@toby_brave",
   "license": "ISC",
   "dependencies": {
@@ -26,6 +23,7 @@
     "ioredis": "^5.2.2",
     "joi": "^17.6.0",
     "jsonwebtoken": "^8.5.1",
+    "moment": "^2.29.4",
     "mongoose": "^6.5.0",
     "mongoose-beautiful-unique-validation": "^7.1.1",
     "nanoid": "^3.3.4",
@@ -40,6 +38,7 @@
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-prettier": "^4.2.1",
+    "morgan": "^1.10.0",
     "nodemon": "^2.0.19",
     "prettier": "^2.7.1"
   }

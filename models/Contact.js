@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const beautifyUnique = require("mongoose-beautiful-unique-validation");
 
-const contactSchema = new mongoose.Schema({
+const ContactSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
@@ -15,9 +15,6 @@ const contactSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  token: {
-    type: String,
-  },
   package: {
     type: String,
     enum: ["free", "premium"],
@@ -25,7 +22,7 @@ const contactSchema = new mongoose.Schema({
   },
   joined: {
     type: Date,
-    default: new Date(),
+    default: Date.now,
   },
   downloads: {
     type: Number,
@@ -37,12 +34,16 @@ const contactSchema = new mongoose.Schema({
       ref: "Vcard",
     },
   ],
+  batch: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Batch",
+  },
 });
 
-contactSchema.plugin(beautifyUnique);
+ContactSchema.plugin(beautifyUnique);
 
 /* eslint-disable */
-contactSchema.set("toJSON", {
+ContactSchema.set("toJSON", {
   transform: (document, obj) => {
     obj.id = obj._id.toString();
     obj.joined = obj.joined.toDateString();
@@ -53,4 +54,4 @@ contactSchema.set("toJSON", {
   },
 });
 
-module.exports = mongoose.model("Contact", contactSchema);
+module.exports = mongoose.model("Contact", ContactSchema);
