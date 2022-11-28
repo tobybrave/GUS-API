@@ -10,6 +10,9 @@
     "ecmaVersion": "latest"
   },
   "rules": {
-    "prettier/prettier": ["warn"]
+    "prettier/prettier": ["warn"],
+    "import/no-extraneous-dependencies": ["error", {
+      "dependencies": true
+    }]
   }
 }
